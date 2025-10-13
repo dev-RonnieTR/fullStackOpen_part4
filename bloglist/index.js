@@ -1,16 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const Blog = require("./models/blog");
 
 const app = express();
-
-const blogSchema = mongoose.Schema({
-	title: String,
-	author: String,
-	url: String,
-	likes: Number,
-});
-
-const Blog = mongoose.model("Blog", blogSchema);
 
 const mongoUrl =
 	"mongodb+srv://ronaldoteran2407_db_user:Ron1998@cluster0.58lxoyj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
