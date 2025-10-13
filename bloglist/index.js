@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const Blog = require("./models/blog");
+const blogsRouter = require("./controllers/blogs");
 
 const app = express();
 
@@ -18,16 +19,7 @@ const mongoUrl =
 
 app.use(express.json());
 
-app.get("/api/blogs", async (req, res, next) => {
-	const blogs = await Blog.find({});
-	res.status(200).json(blogs);
-});
-
-app.post("/api/blogs", async (req, res, next) => {
-    const blog = new Blog(req.body);
-    const result = await blog.save();
-    res.status(201).json(result)
-})
+app.use("/api/blogs", blogsRouter);
 
 const PORT = 3003;
 app.listen(PORT, ()=> {
