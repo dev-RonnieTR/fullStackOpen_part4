@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Blog = require("./models/blog");
 const blogsRouter = require("./controllers/blogs");
 const config = require("./utils/config");
+const logger = require("./utils/logger");
 
 const app = express();
 
@@ -10,7 +11,7 @@ const app = express();
 	try {
 		await mongoose.connect(config.MONGODB_URI);
 	} catch (error) {
-		console.error("Error connecting to MongoDB:", error.message);
+		logger.error("Error connecting to MongoDB:", error.message);
 		process.exit(1);
 	}
 })();
