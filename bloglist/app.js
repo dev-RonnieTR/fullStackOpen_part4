@@ -4,6 +4,8 @@ const Blog = require("./models/blog");
 const blogsRouter = require("./controllers/blogs");
 const config = require("./utils/config");
 const logger = require("./utils/logger");
+const customMiddleware = require("./utils/middleware");
+const { requestLogger, unknownEndpoint, errorHandler } = customMiddleware;
 
 const app = express();
 
@@ -17,7 +19,10 @@ const app = express();
 })();
 
 app.use(express.json());
+app.use(requestLogger);
 
 app.use("/api/blogs", blogsRouter);
+app.use(unknownEndpoint);
+app.use(errorHandler);
 
 module.exports = app;
