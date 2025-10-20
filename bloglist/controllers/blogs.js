@@ -6,6 +6,11 @@ blogsRouter.get("/", async (req, res, next) => {
 	res.status(200).json(blogs);
 });
 
+blogsRouter.get("/:id", async (req, res, next) => {
+	const blog = await Blog.findById(req.params.id);
+	res.status(200).json(blog);
+});
+
 blogsRouter.post("/", async (req, res, next) => {
 	const blog = new Blog(req.body);
 	const result = await blog.save();
