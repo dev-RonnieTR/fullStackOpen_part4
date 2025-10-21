@@ -88,6 +88,18 @@ describe("DELETE request", () => {
 		assert.strictEqual(finalBlogs.length, initialBlogs.length - 1);
 	});
 });
+describe("PUT request", () => {
+	test("updates likes of a blog", async () => {
+		await api
+			.put(`/api/blogs/${initialBlogs[0]._id}`)
+			.send({ ...initialBlogs[0], likes: 100 })
+			.expect(200)
+			.expect((res) => {
+				if (res.body.likes !== 100)
+					throw new Error("response is not updating the likes");
+			});
+	});
+});
 
 after(async () => {
 	await mongoose.connection.close();

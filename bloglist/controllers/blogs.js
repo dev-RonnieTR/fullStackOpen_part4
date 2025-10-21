@@ -31,12 +31,24 @@ blogsRouter.post("/", async (req, res, next) => {
 
 blogsRouter.delete("/:id", async (req, res, next) => {
 	try {
-		await Blog.deleteOne({ _id: req.params.id});
-		await Blog.sa
+		await Blog.deleteOne({ _id: req.params.id });
 		return res.status(204).end();
 	} catch (error) {
 		next(error);
 	}
-})
+});
+
+blogsRouter.put("/:id", async (req, res, next) => {
+	try {
+		const updatedBlog = await Blog.findByIdAndUpdate(
+			req.params.id,
+			{ likes: req.body.likes ?? 0},
+			{ new: true, runValidators: true }
+		);
+		return res.status(200).json(updatedBlog);
+	} catch (error) {
+		next(error);
+	}
+});
 
 module.exports = blogsRouter;
