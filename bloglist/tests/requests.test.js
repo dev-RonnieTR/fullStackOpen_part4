@@ -11,7 +11,6 @@ const api = supertest(app);
 beforeEach(async () => {
 	await Blog.deleteMany({});
 	await Blog.insertMany(initialBlogs);
-	console.log("Insertion successful");
 });
 
 describe("GET request", () => {
@@ -46,11 +45,11 @@ describe("POST request", () => {
 			.expect((res) => {
 				if (!res.body.id) throw new Error("Response missing id");
 			});
-		const savedBlog = (body) => {
+		const stripId = (body) => {
 			const { id, ...rest } = body;
 			return rest;
 		};
-		assert.deepStrictEqual(savedBlog(res.body), newBlog);
+		assert.deepStrictEqual(stripId(res.body), newBlog);
 	});
 	test("without likes amount stores the blog with a default likes amount of zero", async () => {
 		const stripLikes = (blog) => {
@@ -62,13 +61,24 @@ describe("POST request", () => {
 			.send(stripLikes(newBlog))
 			.expect(201)
 			.expect((res) => {
-				console.log(res.body);
 				if (!("likes" in res.body)) throw new Error("Response missing likes");
 				if (res.body.likes !== 0)
 					throw new Error(
 						"Response returning default likes amount different from zero"
 					);
 			});
+	});
+	test("without title or url returns status 400 Bad Request", async () => {
+		const stripTitle = (blog) => {
+			const { title, ...rest } = blog;
+			return rest;
+		};
+		const stripUrl = (blog) => {
+			const { url, ...rest } = blog;
+			return rest;
+		};
+		await api.post("/api/blogs").send(stripTitle(newBlog)).expect(400);
+		await api.post("/api/blogs").send(stripUrl(newBlog)).expect(400);
 	});
 });
 
