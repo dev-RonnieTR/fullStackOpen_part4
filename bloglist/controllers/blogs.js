@@ -9,7 +9,6 @@ blogsRouter.get("/", async (req, res, next) => {
 		next(error);
 	}
 });
-
 blogsRouter.get("/:id", async (req, res, next) => {
 	try {
 		const blog = await Blog.findById(req.params.id);
@@ -29,5 +28,15 @@ blogsRouter.post("/", async (req, res, next) => {
 		next(error);
 	}
 });
+
+blogsRouter.delete("/:id", async (req, res, next) => {
+	try {
+		await Blog.deleteOne({ _id: req.params.id});
+		await Blog.sa
+		return res.status(204).end();
+	} catch (error) {
+		next(error);
+	}
+})
 
 module.exports = blogsRouter;

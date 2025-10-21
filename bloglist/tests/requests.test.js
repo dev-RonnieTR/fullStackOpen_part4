@@ -81,6 +81,13 @@ describe("POST request", () => {
 		await api.post("/api/blogs").send(stripUrl(newBlog)).expect(400);
 	});
 });
+describe("DELETE request", () => {
+	test("decreases blogs in the database by one", async () => {
+		await api.delete(`/api/blogs/${initialBlogs[0]._id}`).expect(204);
+		const finalBlogs = await Blog.find({});
+		assert.strictEqual(finalBlogs.length, initialBlogs.length - 1);
+	});
+});
 
 after(async () => {
 	await mongoose.connection.close();
