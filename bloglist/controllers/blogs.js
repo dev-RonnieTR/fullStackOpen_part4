@@ -12,6 +12,7 @@ blogsRouter.get("/:id", async (req, res, next) => {
 });
 
 blogsRouter.post("/", async (req, res, next) => {
+	req.body.likes = req.body.likes ?? 0;
 	const blog = new Blog(req.body);
 	const result = await blog.save();
 	res.status(201).json(result);
