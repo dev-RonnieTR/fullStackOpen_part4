@@ -26,16 +26,32 @@ describe("GET request", () => {
 		});
 	});
 });
-test("POST request to /api/blogs increments contents of the database by one", async () => {
+describe("POST request", () => {
 	const newBlog = {
 		title: "Javascript Basics",
 		author: "Bruce Wayne",
 		url: "google.com",
 		likes: 95948,
 	};
-	await api.post("/api/blogs").send(newBlog).expect(201);
-	const finalBlogs = await Blog.find({});
-	assert.strictEqual(finalBlogs.length, initialBlogs.length + 1);
+	test("to /api/blogs increments contents of the database by one", async () => {
+		await api.post("/api/blogs").send(newBlog).expect(201);
+		const finalBlogs = await Blog.find({});
+		assert.strictEqual(finalBlogs.length, initialBlogs.length + 1);
+	});
+	test("to /api/blogs saves the blog correctly", async () => {
+		const res = await api
+			.post("/api/blogs")
+			.send(newBlog)
+			.expect(201)
+			.expect((res) => {
+				if (!res.body.id) throw new Error("Response missing id");
+			});
+		const savedBlog = (body) => {
+			const { id, ...rest } = body;
+			return rest;
+		};
+		assert.deepStrictEqual(savedBlog(res.body), newBlog);
+	});
 });
 
 after(async () => {
