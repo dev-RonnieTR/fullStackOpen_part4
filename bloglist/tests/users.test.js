@@ -26,7 +26,7 @@ test("User creation with fresh username is successful", async () => {
 
 	const newUser = {
 		username: "Roach",
-		password: "FuckShepherd00",
+		password: "Fuck$hepherd00",
 		name: "Gary Sanderson",
 	};
 	await api
@@ -43,12 +43,12 @@ test("User creation with fresh username is successful", async () => {
 	const usersAtEnd = await usersInDb();
 	assert.strictEqual(usersAtEnd.length, usersAtStart.length + 1);
 });
-test("User creation with a taken username returns appropriate status code and error message", async () => {
+test("User creation with a taken username fails and returns appropriate status code and error message", async () => {
 	const usersAtStart = await usersInDb();
 
 	const newUser = {
 		username: "CptPrice",
-		password: "123",
+		password: "Price123$",
 		name: "James Price",
 	};
 	await api
@@ -63,7 +63,37 @@ test("User creation with a taken username returns appropriate status code and er
 	const usersAtEnd = await usersInDb();
 	assert.strictEqual(usersAtEnd.length, usersAtStart.length);
 });
+test("User creation with invalid username fails", async () => {
+	const usersAtStart = await usersInDb();
 
+	const newUser = { username: "ab", password: "Price123$" };
+	await api.post("/api/users").send(newUser).expect(400);
+
+	const usersAtEnd = await usersInDb();
+
+	assert.strictEqual(usersAtEnd.length, usersAtStart.length);
+});
+test("User creation fails when password is too weak", async () => {
+	const usersAtStart = await usersInDb();
+
+	const newUser = { username: "MakarovX", password: "123456789" };
+	await api
+		.post("/api/users")
+		.send(newUser)
+		.expect(400)
+		.expect((res) => {
+			if (
+				!res.body.error.includes(
+					"The password must have at least 7 characters, one uppercase, one lowercase, one number and one special character"
+				)
+			)
+				throw new Error("response returning incorrect message");
+		});
+
+	const usersAtEnd = await usersInDb();
+
+	assert.strictEqual(usersAtEnd.length, usersAtStart.length);
+});
 after(() => mongoose.connection.close());
 
 // npm test -- tests/users.test.js
