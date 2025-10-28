@@ -94,6 +94,21 @@ test("User creation fails when password is too weak", async () => {
 
 	assert.strictEqual(usersAtEnd.length, usersAtStart.length);
 });
+test("GET request to /api/users shows all users", async () => {
+	const users = await usersInDb();
+	const result = await api.get("/api/users").expect(200).expect((res) => {
+		
+		if (res.body.length !== users.length) throw new Error ("response not returning all users")
+	})
+	
+	assert.deepStrictEqual(result.body[0], users[0]);
+})
+test("GET request to one resource pulls information about that one user", async () => {
+	const users = await usersInDb();
+	const result = await api.get(`/api/users/${users[0].id}`).expect(200);
+	
+	assert.deepStrictEqual(result.body, users[0]);
+})
 after(() => mongoose.connection.close());
 
 // npm test -- tests/users.test.js

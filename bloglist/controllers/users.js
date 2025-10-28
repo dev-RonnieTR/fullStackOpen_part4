@@ -2,6 +2,23 @@ const bcrypt = require("bcrypt");
 const usersRouter = require("express").Router();
 const User = require("../models/user");
 
+usersRouter.get("/", async (req, res, next) => {
+	try {
+		const users = await User.find({});
+		return res.status(200).json(users);
+	} catch (error) {
+		next(error);
+	}
+});
+usersRouter.get("/:id", async (req, res, next) => {
+	try {
+		const user = await User.findById(req.params.id);
+		return res.status(200).json(user);
+	} catch (error) {
+		next(error);
+	}
+});
+
 usersRouter.post("/", async (req, res, next) => {
 	try {
 		const { username, password, name } = req.body;
