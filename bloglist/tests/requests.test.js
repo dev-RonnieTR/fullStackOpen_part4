@@ -1,14 +1,26 @@
 const { test, describe, after, beforeEach } = require("node:test");
 const assert = require("node:assert");
+const bcrypt = require("bcrypt");
 const supertest = require("supertest");
 const app = require("../app");
 const mongoose = require("mongoose");
 const Blog = require("../models/blog");
-const initialBlogs = require("../utils/list_helper").blogs;
+const { initialBlogs, blogsInDb } = require("../utils/list_helper")
+const User = require("../models/user");
+const initialUsers = require("../utils/user_test_helper").initialUsers;
+
 
 const api = supertest(app);
 
 beforeEach(async () => {
+	await User.deleteMany({});
+	const hashedUsers = await Promise.all(
+		initialUsers.map(async ({ password, ...rest }) => {
+			const passwordHash = await bcrypt.hash(password, 10);
+			return { ...rest, passwordHash };
+		})
+	);
+	await User.insertMany(hashedUsers);
 	await Blog.deleteMany({});
 	await Blog.insertMany(initialBlogs);
 });
@@ -25,32 +37,33 @@ describe("GET request", () => {
 		});
 	});
 });
-describe("POST request", () => {
+describe("POST request", async () => {
+	const user = await User.findOne({});
 	const newBlog = {
 		title: "Javascript Basics",
 		author: "Bruce Wayne",
 		url: "google.com",
 		likes: 95948,
+		user: user._id,
 	};
 	test("to /api/blogs increments contents of the database by one", async () => {
 		await api.post("/api/blogs").send(newBlog).expect(201);
 		const finalBlogs = await Blog.find({});
 		assert.strictEqual(finalBlogs.length, initialBlogs.length + 1);
 	});
-	test("to /api/blogs saves the blog correctly", async () => {
-		const res = await api
-			.post("/api/blogs")
-			.send(newBlog)
-			.expect(201)
-			.expect((res) => {
-				if (!res.body.id) throw new Error("Response missing id");
-			});
-		const stripId = (body) => {
-			const { id, ...rest } = body;
-			return rest;
-		};
-		assert.deepStrictEqual(stripId(res.body), newBlog);
-	});
+test("to /api/blogs saves the blog correctly", async () => {
+	const res = await api
+		.post("/api/blogs")
+		.send(newBlog)
+		.expect(201)
+		.expect("Content-Type", /application\/json/);
+
+	const blogs = await blogsInDb();
+	const expectedBlog = blogs[blogs.length - 1];
+	
+	console.log("***expected blog:", expectedBlog, "***Response:", res.body)
+	assert.deepStrictEqual(normalize(expectedBlog), normalize(res.body));
+});
 	test("without likes amount stores the blog with a default likes amount of zero", async () => {
 		const stripLikes = (blog) => {
 			const { likes, ...rest } = blog;

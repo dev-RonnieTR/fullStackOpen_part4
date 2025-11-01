@@ -1,4 +1,6 @@
-const blogs = [
+const Blog = require("../models/blog");
+
+const initialBlogs = [
   {
     _id: "5a422a851b54a676234d17f7",
     title: "React patterns",
@@ -118,5 +120,10 @@ const mostLikes = (blogList) => {
 	return { author: largestValue[0], likes: largestValue[1] };
 };
 
-const listHelper = { blogs, dummy, totalLikes, favoriteBlog, mostBlogs, mostLikes };
+const blogsInDb = async () => {
+  const blogs = await Blog.find({});
+  return blogs.map((blog) => blog.toJSON());
+}
+
+const listHelper = { initialBlogs, dummy, totalLikes, favoriteBlog, mostBlogs, mostLikes, blogsInDb };
 module.exports = listHelper;
