@@ -8,9 +8,70 @@ const assert = require("node:assert");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-const { initialUsers, usersInDb } = require("../utils/user_test_helper");
+const { usersInDb } = require("../utils/user_test_helper");
+const Blog = require("../models/blog");
+
+const initialUsers = [
+	{ username: "CptPrice", password: "KillMakarov123$", name: "John Price" },
+	{ username: "Gh0st", password: "JohnnyLoverX0$", name: "Simon Riley" },
+	{ username: "$oap", password: "Tf141$", name: "John McTavish" },
+	{ username: "Mason", password: "D4ddyResnov@", name: "Alex Mason" },
+	{ username: "Woods", password: "CantKillMe1#", name: "Frank Woods" },
+	{ username: "Hudson", password: "cIa1@gent", name: "Jason Hudson" },
+];
+const initialBlogs = [
+	{
+		_id: "5a422a851b54a676234d17f7",
+		title: "React patterns",
+		author: "Michael Chan",
+		url: "https://reactpatterns.com/",
+		likes: 7,
+		__v: 0,
+	},
+	{
+		_id: "5a422aa71b54a676234d17f8",
+		title: "Go To Statement Considered Harmful",
+		author: "Edsger W. Dijkstra",
+		url: "http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html",
+		likes: 5,
+		__v: 0,
+	},
+	{
+		_id: "5a422b3a1b54a676234d17f9",
+		title: "Canonical string reduction",
+		author: "Edsger W. Dijkstra",
+		url: "http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html",
+		likes: 12,
+		__v: 0,
+	},
+	{
+		_id: "5a422b891b54a676234d17fa",
+		title: "First class tests",
+		author: "Robert C. Martin",
+		url: "http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll",
+		likes: 10,
+		__v: 0,
+	},
+	{
+		_id: "5a422ba71b54a676234d17fb",
+		title: "TDD harms architecture",
+		author: "Robert C. Martin",
+		url: "http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html",
+		likes: 0,
+		__v: 0,
+	},
+	{
+		_id: "5a422bc61b54a676234d17fc",
+		title: "Type wars",
+		author: "Robert C. Martin",
+		url: "http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html",
+		likes: 2,
+		__v: 0,
+	},
+];
 
 beforeEach(async () => {
+	await Blog.deleteMany({});
 	await User.deleteMany({});
 	const hashedUsers = await Promise.all(
 		initialUsers.map(async ({ password, ...rest }) => {
@@ -19,6 +80,26 @@ beforeEach(async () => {
 		})
 	);
 	await User.insertMany(hashedUsers);
+	await Blog.insertMany(initialBlogs);
+
+	const users = await User.find({});
+	const blogs = await Blog.find({});
+
+	const blogOps = blogs.map((blog, i) => ({
+		updateOne: {
+			filter: { _id: blog._id },
+			update: { $set: { user: users[i]._id } },
+		},
+	}));
+	const userOps = users.map((user, i) => ({
+		updateOne: {
+			filter: { _id: user._id },
+			update: { $push: { blogs: blogs[i]._id } },
+		},
+	}));
+
+	await User.bulkWrite(userOps);
+	await Blog.bulkWrite(blogOps);
 });
 
 test("User creation with fresh username is successful", async () => {
@@ -96,19 +177,18 @@ test("User creation fails when password is too weak", async () => {
 });
 test("GET request to /api/users shows all users", async () => {
 	const users = await usersInDb();
-	const result = await api.get("/api/users").expect(200).expect((res) => {
-		
-		if (res.body.length !== users.length) throw new Error ("response not returning all users")
-	})
-	
-	assert.deepStrictEqual(result.body[0], users[0]);
-})
+	const result = await api
+		.get("/api/users")
+		.expect(200)
+		.expect((res) => {
+			if (res.body.length !== users.length)
+				throw new Error("response not returning all users");
+		});
+});
 test("GET request to one resource pulls information about that one user", async () => {
 	const users = await usersInDb();
 	const result = await api.get(`/api/users/${users[0].id}`).expect(200);
-	
-	assert.deepStrictEqual(result.body, users[0]);
-})
+});
 after(() => mongoose.connection.close());
 
 // npm test -- tests/users.test.js

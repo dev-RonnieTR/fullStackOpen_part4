@@ -5,12 +5,67 @@ const supertest = require("supertest");
 const app = require("../app");
 const mongoose = require("mongoose");
 const Blog = require("../models/blog");
-const { initialBlogs, blogsInDb } = require("../utils/list_helper")
+const { blogsInDb } = require("../utils/list_helper");
 const User = require("../models/user");
-const initialUsers = require("../utils/user_test_helper").initialUsers;
-
-
 const api = supertest(app);
+const initialUsers = [
+	{ username: "CptPrice", password: "KillMakarov123$", name: "John Price" },
+	{ username: "Gh0st", password: "JohnnyLoverX0$", name: "Simon Riley" },
+	{ username: "$oap", password: "Tf141$", name: "John McTavish" },
+	{ username: "Mason", password: "D4ddyResnov@", name: "Alex Mason" },
+	{ username: "Woods", password: "CantKillMe1#", name: "Frank Woods" },
+	{ username: "Hudson", password: "cIa1@gent", name: "Jason Hudson" },
+];
+const initialBlogs = [
+	{
+		_id: "5a422a851b54a676234d17f7",
+		title: "React patterns",
+		author: "Michael Chan",
+		url: "https://reactpatterns.com/",
+		likes: 7,
+		__v: 0,
+	},
+	{
+		_id: "5a422aa71b54a676234d17f8",
+		title: "Go To Statement Considered Harmful",
+		author: "Edsger W. Dijkstra",
+		url: "http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html",
+		likes: 5,
+		__v: 0,
+	},
+	{
+		_id: "5a422b3a1b54a676234d17f9",
+		title: "Canonical string reduction",
+		author: "Edsger W. Dijkstra",
+		url: "http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html",
+		likes: 12,
+		__v: 0,
+	},
+	{
+		_id: "5a422b891b54a676234d17fa",
+		title: "First class tests",
+		author: "Robert C. Martin",
+		url: "http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll",
+		likes: 10,
+		__v: 0,
+	},
+	{
+		_id: "5a422ba71b54a676234d17fb",
+		title: "TDD harms architecture",
+		author: "Robert C. Martin",
+		url: "http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html",
+		likes: 0,
+		__v: 0,
+	},
+	{
+		_id: "5a422bc61b54a676234d17fc",
+		title: "Type wars",
+		author: "Robert C. Martin",
+		url: "http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html",
+		likes: 2,
+		__v: 0,
+	},
+];
 
 beforeEach(async () => {
 	await User.deleteMany({});
@@ -23,11 +78,32 @@ beforeEach(async () => {
 	await User.insertMany(hashedUsers);
 	await Blog.deleteMany({});
 	await Blog.insertMany(initialBlogs);
+
+	const blogs = await Blog.find({}).lean();
+	const users = await User.find({}).lean();
+
+	const blogOps = blogs.map((blog, i) => ({
+		updateOne: {
+			filter: { _id: blog._id },
+			update: { $set: { user: users[i]._id } },
+		},
+	}));
+
+	const userOps = users.map((user, i) => ({
+		updateOne: {
+			filter: { _id: user._id },
+			update: { $push: { blogs: blogs[i]._id } },
+		},
+	}));
+
+	await Blog.bulkWrite(blogOps, { ordered: false });
+	await User.bulkWrite(userOps, { ordered: false });
 });
 
 describe("GET request", () => {
 	test("to /api/blogs returns all blog posts", async () => {
 		const res = await api.get("/api/blogs");
+		console.log("BLOGS:", res.body);
 		assert.strictEqual(res.body.length, initialBlogs.length);
 	});
 	test("to /api/blogs/:id returns an object with 'id' property instead of '_id'", async () => {
@@ -51,19 +127,22 @@ describe("POST request", async () => {
 		const finalBlogs = await Blog.find({});
 		assert.strictEqual(finalBlogs.length, initialBlogs.length + 1);
 	});
-test("to /api/blogs saves the blog correctly", async () => {
-	const res = await api
-		.post("/api/blogs")
-		.send(newBlog)
-		.expect(201)
-		.expect("Content-Type", /application\/json/);
+	test("to /api/blogs saves the blog correctly", async () => {
+		const res = await api
+			.post("/api/blogs")
+			.send(newBlog)
+			.expect(201)
+			.expect("Content-Type", /application\/json/);
 
-	const blogs = await blogsInDb();
-	const expectedBlog = blogs[blogs.length - 1];
-	
-	console.log("***expected blog:", expectedBlog, "***Response:", res.body)
-	assert.deepStrictEqual(normalize(expectedBlog), normalize(res.body));
-});
+		const blogs = await blogsInDb();
+		const expectedBlog = blogs[blogs.length - 1];
+
+		const normalize = ({ user, ...rest }) => {
+			user = user.toString();
+			return { ...rest, user };
+		};
+		assert.deepStrictEqual(normalize(expectedBlog), normalize(res.body));
+	});
 	test("without likes amount stores the blog with a default likes amount of zero", async () => {
 		const stripLikes = (blog) => {
 			const { likes, ...rest } = blog;

@@ -3,7 +3,10 @@ const Blog = require("../models/blog");
 
 blogsRouter.get("/", async (req, res, next) => {
 	try {
-		const blogs = await Blog.find({});
+		const blogs = await Blog.find({}).populate("user", {
+			username: 1,
+			name: 1,
+		});
 		res.status(200).json(blogs);
 	} catch (error) {
 		next(error);
@@ -11,7 +14,10 @@ blogsRouter.get("/", async (req, res, next) => {
 });
 blogsRouter.get("/:id", async (req, res, next) => {
 	try {
-		const blog = await Blog.findById(req.params.id);
+		const blog = await Blog.findById(req.params.id).populate("user", {
+			username: 1,
+			name: 1,
+		});
 		res.status(200).json(blog);
 	} catch (error) {
 		next(error);
@@ -42,7 +48,7 @@ blogsRouter.put("/:id", async (req, res, next) => {
 	try {
 		const updatedBlog = await Blog.findByIdAndUpdate(
 			req.params.id,
-			{ likes: req.body.likes ?? 0},
+			{ likes: req.body.likes ?? 0 },
 			{ new: true, runValidators: true }
 		);
 		return res.status(200).json(updatedBlog);
