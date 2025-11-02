@@ -27,12 +27,13 @@ const errorHandler = (error, req, res, next) => {
 		return res.status(400).json({ error: "expected 'username' to be unique" });
 	}
 	if (error.message === "Weak password") {
-		return res
-			.status(400)
-			.json({
-				error:
-					"The password must have at least 7 characters, one uppercase, one lowercase, one number and one special character",
-			});
+		return res.status(400).json({
+			error:
+				"The password must have at least 7 characters, one uppercase, one lowercase, one number and one special character",
+		});
+	}
+	if (error.message === "invalid credentials") {
+		return res.status(401).json({ error: "invalid username or password" });
 	}
 	next(error);
 };
