@@ -35,6 +35,14 @@ const errorHandler = (error, req, res, next) => {
 	if (error.message === "invalid credentials") {
 		return res.status(401).json({ error: "invalid username or password" });
 	}
+	if (error.message === "null token")
+		return res
+			.status(401)
+			.json({ error: "could not find a token for the request" });
+	if (error.message === "id missing")
+		return res.status(401).json({ error: "token malformed" });
+	if (error.message === "user not in database") return res.status(401).json({ error: "invalid user"})
+	if (error.name === "JsonWebTokenError") return res.status(401).json({ error: "token invalid" })
 	next(error);
 };
 
