@@ -9,7 +9,7 @@ const loginRouter = require("./controllers/login");
 const config = require("./utils/config");
 const logger = require("./utils/logger");
 const customMiddleware = require("./utils/middleware");
-const { requestLogger, unknownEndpoint, errorHandler } = customMiddleware;
+const { requestLogger, tokenExtractor, unknownEndpoint, errorHandler } = customMiddleware;
 
 const app = express();
 
@@ -24,10 +24,12 @@ const app = express();
 
 app.use(express.json());
 app.use(requestLogger);
-
-app.use("/api/blogs", blogsRouter);
-app.use("/api/users", usersRouter);
+app.use(tokenExtractor);
 app.use("/api/login", loginRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/blogs", blogsRouter);
+
+
 
 app.use(unknownEndpoint);
 app.use(errorHandler);

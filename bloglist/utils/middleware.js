@@ -8,6 +8,19 @@ const requestLogger = (req, res, next) => {
 	next();
 };
 
+const tokenExtractor = (req, res, next) => {
+	try {
+		const authorization = req.get("authorization");
+		req.token =
+			authorization && authorization.startsWith("Bearer ")
+				? authorization.replace("Bearer ", "")
+				: null;
+		next();
+	} catch (error) {
+		next(error);
+	}
+};
+
 const unknownEndpoint = (req, res) => {
 	res.status(404).json({ error: "unknown endpoint" });
 };
@@ -41,11 +54,18 @@ const errorHandler = (error, req, res, next) => {
 			.json({ error: "could not find a token for the request" });
 	if (error.message === "id missing")
 		return res.status(401).json({ error: "token malformed" });
-	if (error.message === "user not in database") return res.status(401).json({ error: "invalid user"})
-	if (error.name === "JsonWebTokenError") return res.status(401).json({ error: "token invalid" })
+	if (error.message === "user not in database")
+		return res.status(401).json({ error: "invalid user" });
+	if (error.name === "JsonWebTokenError")
+		return res.status(401).json({ error: "token invalid" });
 	next(error);
 };
 
-const customMiddleware = { requestLogger, unknownEndpoint, errorHandler };
+const customMiddleware = {
+	requestLogger,
+	tokenExtractor,
+	unknownEndpoint,
+	errorHandler,
+};
 
 module.exports = customMiddleware;
