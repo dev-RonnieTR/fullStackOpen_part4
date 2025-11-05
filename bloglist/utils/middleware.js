@@ -58,6 +58,10 @@ const errorHandler = (error, req, res, next) => {
 		return res.status(401).json({ error: "invalid user" });
 	if (error.name === "JsonWebTokenError")
 		return res.status(401).json({ error: "token invalid" });
+	if (error.message === "unauthorized")
+		return res
+			.status(401)
+			.json({ error: "user is not authorized to perform this request" });
 	next(error);
 };
 
