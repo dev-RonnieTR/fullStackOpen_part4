@@ -20,7 +20,7 @@ blogsRouter.get("/:id", async (req, res, next) => {
 			username: 1,
 			name: 1,
 		});
-		if (!blog) return res.status(404).json({ error: "blog does not exist"});
+		if (!blog) return res.status(404).json({ error: "blog does not exist" });
 		console.log(blog);
 		res.status(200).json(blog);
 	} catch (error) {
@@ -30,12 +30,7 @@ blogsRouter.get("/:id", async (req, res, next) => {
 
 blogsRouter.post("/", async (req, res, next) => {
 	try {
-		if (req.token === null) throw new Error("null token");
-		const decodedToken = jwt.verify(req.token, process.env.SECRET);
-		if (!decodedToken.id) throw new Error("id missing");
-		const user = await User.findById(decodedToken.id);
-
-		if (!user) throw new Error("user not in database");
+		const user = req.user;
 
 		const blog = new Blog(req.body);
 		blog.user = user._id;
@@ -52,15 +47,12 @@ blogsRouter.post("/", async (req, res, next) => {
 
 blogsRouter.delete("/:id", async (req, res, next) => {
 	try {
+		const user = req.user;
+
 		const requestedBlog = await Blog.findById(req.params.id);
 		if (!requestedBlog)
 			return res.status(404).json({ error: "blog does not exist" });
-
-		if (req.token === null) throw new Error("null token");
-		const decodedToken = jwt.verify(req.token, process.env.SECRET);
-		if (!decodedToken.id) throw new Error("id missing");
-
-		if (!(requestedBlog.user.toString() === decodedToken.id))
+		if (!(requestedBlog.user.toString() === user.id.toString()))
 			throw new Error("unauthorized");
 
 		await requestedBlog.deleteOne();
