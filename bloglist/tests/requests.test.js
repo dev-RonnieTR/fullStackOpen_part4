@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const Blog = require("../models/blog");
 const { blogsInDb } = require("../utils/list_helper");
 const User = require("../models/user");
+const jwt = require("jsonwebtoken");
 const api = supertest(app);
 const initialUsers = [
 	{ username: "CptPrice", password: "KillMakarov123$", name: "John Price" },
@@ -67,6 +68,10 @@ const initialBlogs = [
 	},
 ];
 
+let user;
+let userForToken;
+let token;
+
 beforeEach(async () => {
 	await User.deleteMany({});
 	const hashedUsers = await Promise.all(
@@ -98,6 +103,13 @@ beforeEach(async () => {
 
 	await Blog.bulkWrite(blogOps, { ordered: false });
 	await User.bulkWrite(userOps, { ordered: false });
+
+	user = await User.findOne();
+	userForToken = {
+		username: user.username,
+		id: user._id,
+	};
+	token = jwt.sign(userForToken, process.env.SECRET);
 });
 
 describe("GET request", () => {
@@ -114,22 +126,33 @@ describe("GET request", () => {
 	});
 });
 describe("POST request", async () => {
-	const user = await User.findOne({});
-	const newBlog = {
-		title: "Javascript Basics",
-		author: "Bruce Wayne",
-		url: "google.com",
-		likes: 95948,
-		user: user._id,
-	};
 	test("to /api/blogs increments contents of the database by one", async () => {
-		await api.post("/api/blogs").send(newBlog).expect(201);
+		const newBlog = {
+			title: "Javascript Basics",
+			author: "Bruce Wayne",
+			url: "google.com",
+			likes: 95948,
+			user: user._id,
+		};
+		await api
+			.post("/api/blogs")
+			.set("authorization", `Bearer ${token}`)
+			.send(newBlog)
+			.expect(201);
 		const finalBlogs = await Blog.find({});
 		assert.strictEqual(finalBlogs.length, initialBlogs.length + 1);
 	});
 	test("to /api/blogs saves the blog correctly", async () => {
+		const newBlog = {
+			title: "Javascript Basics",
+			author: "Bruce Wayne",
+			url: "google.com",
+			likes: 95948,
+			user: user._id,
+		};
 		const res = await api
 			.post("/api/blogs")
+			.set("authorization", `Bearer ${token}`)
 			.send(newBlog)
 			.expect(201)
 			.expect("Content-Type", /application\/json/);
@@ -144,12 +167,21 @@ describe("POST request", async () => {
 		assert.deepStrictEqual(normalize(expectedBlog), normalize(res.body));
 	});
 	test("without likes amount stores the blog with a default likes amount of zero", async () => {
+		const newBlog = {
+			title: "Javascript Basics",
+			author: "Bruce Wayne",
+			url: "google.com",
+			likes: 95948,
+			user: user._id,
+		};
+
 		const stripLikes = (blog) => {
 			const { likes, ...rest } = blog;
 			return rest;
 		};
 		await api
 			.post("/api/blogs")
+			.set("authorization", `Bearer ${token}`)
 			.send(stripLikes(newBlog))
 			.expect(201)
 			.expect((res) => {
@@ -161,6 +193,14 @@ describe("POST request", async () => {
 			});
 	});
 	test("without title or url returns status 400 Bad Request", async () => {
+		const newBlog = {
+			title: "Javascript Basics",
+			author: "Bruce Wayne",
+			url: "google.com",
+			likes: 95948,
+			user: user._id,
+		};
+
 		const stripTitle = (blog) => {
 			const { title, ...rest } = blog;
 			return rest;
@@ -169,13 +209,13 @@ describe("POST request", async () => {
 			const { url, ...rest } = blog;
 			return rest;
 		};
-		await api.post("/api/blogs").send(stripTitle(newBlog)).expect(400);
-		await api.post("/api/blogs").send(stripUrl(newBlog)).expect(400);
+		await api.post("/api/blogs").set("authorization", `Bearer ${token}`).send(stripTitle(newBlog)).expect(400);
+		await api.post("/api/blogs").set("authorization", `Bearer ${token}`).send(stripUrl(newBlog)).expect(400);
 	});
 });
 describe("DELETE request", () => {
 	test("decreases blogs in the database by one", async () => {
-		await api.delete(`/api/blogs/${initialBlogs[0]._id}`).expect(204);
+		await api.delete(`/api/blogs/${initialBlogs[0]._id}`).set("authorization", `Bearer ${token}`).expect(204);
 		const finalBlogs = await Blog.find({});
 		assert.strictEqual(finalBlogs.length, initialBlogs.length - 1);
 	});

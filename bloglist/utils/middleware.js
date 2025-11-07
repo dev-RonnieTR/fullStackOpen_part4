@@ -27,14 +27,10 @@ const userExtractor = async (req, res, next) => {
 	try {
 		if (!(req.method === "POST" || req.method === "DELETE")) return next();
 		if (req.token === null) throw new Error("null token");
-		
 		const decodedToken = jwt.verify(req.token, process.env.SECRET);
-		
 		if (!decodedToken.id) throw new Error("id missing");
-
 		req.user = await User.findById(decodedToken.id);
 		if (!req.user) throw new Error("user not in database")
-
 		next();
 	} catch (error) {
 		next(error);
