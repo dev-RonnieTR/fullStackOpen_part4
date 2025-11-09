@@ -115,7 +115,6 @@ beforeEach(async () => {
 describe("GET request", () => {
 	test("to /api/blogs returns all blog posts", async () => {
 		const res = await api.get("/api/blogs");
-		console.log("BLOGS:", res.body);
 		assert.strictEqual(res.body.length, initialBlogs.length);
 	});
 	test("to /api/blogs/:id returns an object with 'id' property instead of '_id'", async () => {
@@ -209,13 +208,46 @@ describe("POST request", async () => {
 			const { url, ...rest } = blog;
 			return rest;
 		};
-		await api.post("/api/blogs").set("authorization", `Bearer ${token}`).send(stripTitle(newBlog)).expect(400);
-		await api.post("/api/blogs").set("authorization", `Bearer ${token}`).send(stripUrl(newBlog)).expect(400);
+		await api
+			.post("/api/blogs")
+			.set("authorization", `Bearer ${token}`)
+			.send(stripTitle(newBlog))
+			.expect(400);
+		await api
+			.post("/api/blogs")
+			.set("authorization", `Bearer ${token}`)
+			.send(stripUrl(newBlog))
+			.expect(400);
+	});
+	test("without a token fails with status 401 unauthorized and an appropriate error message", async () => {
+		const newBlog = {
+			title: "Javascript Basics",
+			author: "Bruce Wayne",
+			url: "google.com",
+			likes: 95948,
+			user: user._id,
+		};
+		const blogsAtStart = await Blog.find({});
+		api
+			.post("/api/blogs")
+			.send(newBlog)
+			.expect(401)
+			.expect((res) => {
+				if (res.body.error !== "could not find a token for the request") throw new Error("response not returning correct error message")
+			})
+			.expect(async () => {
+				const blogsAtEnd = await Blog.find({});
+				if (blogsAtStart.length !== blogsAtEnd.length)
+					throw new Error("amount of blogs have changed");
+			});
 	});
 });
 describe("DELETE request", () => {
 	test("decreases blogs in the database by one", async () => {
-		await api.delete(`/api/blogs/${initialBlogs[0]._id}`).set("authorization", `Bearer ${token}`).expect(204);
+		await api
+			.delete(`/api/blogs/${initialBlogs[0]._id}`)
+			.set("authorization", `Bearer ${token}`)
+			.expect(204);
 		const finalBlogs = await Blog.find({});
 		assert.strictEqual(finalBlogs.length, initialBlogs.length - 1);
 	});
