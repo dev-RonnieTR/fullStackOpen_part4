@@ -9,7 +9,6 @@ loginRouter.post("/", async (req, res, next) => {
 		const user = await User.findOne({ username });
 		const isPasswordCorrect =
 			user === null ? false : await bcrypt.compare(password, user.passwordHash);
-		console.log(isPasswordCorrect);
 
 		if (!(user && isPasswordCorrect)) {
 			throw new Error("invalid credentials");
@@ -19,7 +18,7 @@ loginRouter.post("/", async (req, res, next) => {
 			username: user.username,
 			id: user._id,
 		};
-		const token = jwt.sign(userForToken, process.env.SECRET);
+		const token = jwt.sign(userForToken, process.env.SECRET, { expiresIn: 60*30 });
 
 		return res
 			.status(200)

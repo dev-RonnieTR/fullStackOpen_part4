@@ -68,7 +68,7 @@ blogsRouter.put("/:id", async (req, res, next) => {
 			req.params.id,
 			{ likes: req.body.likes ?? 0 },
 			{ new: true, runValidators: true }
-		);
+		).populate("user", { name: 1, username: 1 });
 		return res.status(200).json(updatedBlog);
 	} catch (error) {
 		next(error);
