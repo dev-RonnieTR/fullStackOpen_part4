@@ -37,9 +37,10 @@ blogsRouter.post("/", async (req, res, next) => {
 		blog.likes = blog.likes ?? 0;
 
 		const result = await blog.save();
+		const populated = await result.populate("user", { username: 1, name: 1 })
 		user.blogs = [...user.blogs, result._id];
 		await user.save();
-		return res.status(201).json(result);
+		return res.status(201).json(populated);
 	} catch (error) {
 		next(error);
 	}
